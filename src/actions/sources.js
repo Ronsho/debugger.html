@@ -16,6 +16,7 @@ import { remapBreakpoints } from "./breakpoints";
 import { setEmptyLines, setOutOfScopeLocations } from "./ast";
 import { syncBreakpoint } from "./breakpoints";
 import { searchSource } from "./project-text-search";
+import { closeActiveSearch } from "./ui";
 
 import { getPrettySourceURL, isLoaded } from "../utils/source";
 import { createPrettySource } from "./sources/createPrettySource";
@@ -29,14 +30,14 @@ import {
   getSources,
   getSourceByURL,
   getPendingSelectedLocation,
-  getPendingBreakpoints,
+  getPendingBreakpointsForSource,
   getSourceTabs,
   getNewSelectedSourceId,
   getSelectedLocation,
   removeSourcesFromTabList,
   removeSourceFromTabList,
   getTextSearchQuery,
-  getActiveSearchState
+  getActiveSearch
 } from "../selectors";
 
 import type { Source } from "../types";
@@ -63,16 +64,18 @@ async function checkPendingBreakpoint(
   const sameSource = sourceUrl && sourceUrl === source.url;
 
   if (sameSource) {
-    await dispatch(syncBreakpoint(source, pendingBreakpoint));
+    await dispatch(syncBreakpoint(source.id, pendingBreakpoint));
   }
 }
 
 async function checkPendingBreakpoints(state, dispatch, source) {
-  const pendingBreakpoints = getPendingBreakpoints(state);
-  if (!pendingBreakpoints) {
+  const pendingBreakpoints = getPendingBreakpointsForSource(state, source.url);
+  if (!pendingBreakpoints.size) {
     return;
   }
 
+  // load the source text if there is a pending breakpoint for it
+  await dispatch(loadSourceText(source));
   const pendingBreakpointsArray = pendingBreakpoints.valueSeq().toJS();
   for (const pendingBreakpoint of pendingBreakpointsArray) {
     await checkPendingBreakpoint(state, dispatch, pendingBreakpoint, source);
@@ -187,9 +190,9 @@ export function selectSource(id: string, options: SelectSourceOptions = {}) {
       return dispatch({ type: "CLEAR_SELECTED_SOURCE" });
     }
 
-    const activeSearch = getActiveSearchState(getState());
+    const activeSearch = getActiveSearch(getState());
     if (activeSearch !== "file") {
-      dispatch({ type: "TOGGLE_ACTIVE_SEARCH", value: null });
+      dispatch(closeActiveSearch());
     }
 
     dispatch(addTab(source.toJS(), 0));

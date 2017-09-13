@@ -15,7 +15,7 @@ import { isLoaded } from "../../utils/source";
 import { isEmptyLineInSource } from "../../reducers/ast";
 
 import {
-  getActiveSearchState,
+  getActiveSearch,
   getSelectedLocation,
   getSelectedFrame,
   getSelectedSource,
@@ -27,7 +27,8 @@ import {
   getFileSearchQueryState,
   getFileSearchModifierState,
   getVisibleBreakpoints,
-  getInScopeLines
+  getInScopeLines,
+  getConditionalBreakpointPanel
 } from "../../selectors";
 
 import actions from "../../actions";
@@ -251,6 +252,13 @@ class Editor extends PureComponent {
     if (selectedSource && selectedSource.has("text")) {
       this.highlightLine();
     }
+
+    if (
+      this.props.conditionalBreakpointPanel !== null &&
+      this.cbPanel == null
+    ) {
+      this.toggleConditionalPanel(this.props.conditionalBreakpointPanel);
+    }
   }
 
   onToggleBreakpoint(key, e) {
@@ -394,7 +402,9 @@ class Editor extends PureComponent {
       breakpoints,
       toggleBreakpoint,
       toggleDisabledBreakpoint,
-      isEmptyLine
+      isEmptyLine,
+      pauseData,
+      continueToHere
     } = this.props;
 
     if (selectedSource && selectedSource.get("isBlackBoxed")) {
@@ -416,6 +426,8 @@ class Editor extends PureComponent {
       breakpoint,
       toggleBreakpoint,
       toggleDisabledBreakpoint,
+      pauseData,
+      continueToHere,
 
       showConditionalPanel: this.toggleConditionalPanel,
       isCbPanelOpen: this.isCbPanelOpen(),
@@ -459,6 +471,7 @@ class Editor extends PureComponent {
   }
 
   closeConditionalPanel() {
+    this.props.toggleConditionalBreakpointPanel(null);
     this.cbPanel.clear();
     this.cbPanel = null;
   }
@@ -741,7 +754,10 @@ Editor.propTypes = {
   toggleBreakpoint: PropTypes.func.isRequired,
   addOrToggleDisabledBreakpoint: PropTypes.func.isRequired,
   toggleDisabledBreakpoint: PropTypes.func.isRequired,
-  isEmptyLine: PropTypes.func
+  conditionalBreakpointPanel: PropTypes.number,
+  toggleConditionalBreakpointPanel: PropTypes.func.isRequired,
+  isEmptyLine: PropTypes.func,
+  continueToHere: PropTypes.func
 };
 
 Editor.contextTypes = {
@@ -758,7 +774,7 @@ export default connect(
       selectedLocation,
       selectedSource,
       highlightedLineRange: getHighlightedLineRange(state),
-      searchOn: getActiveSearchState(state) === "file",
+      searchOn: getActiveSearch(state) === "file",
       loadedObjects: getLoadedObjects(state),
       breakpoints: getVisibleBreakpoints(state),
       hitCount: getHitCountForSource(state, sourceId),
@@ -769,7 +785,8 @@ export default connect(
       searchModifiers: getFileSearchModifierState(state),
       linesInScope: getInScopeLines(state),
       isEmptyLine: line =>
-        isEmptyLineInSource(state, line, selectedSource.toJS())
+        isEmptyLineInSource(state, line, selectedSource.toJS()),
+      conditionalBreakpointPanel: getConditionalBreakpointPanel(state)
     };
   },
   dispatch => bindActionCreators(actions, dispatch)

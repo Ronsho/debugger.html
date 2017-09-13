@@ -18,32 +18,7 @@ export default class SourceSearch extends Component {
     clearQuery: () => void
   };
 
-  onEscape: Function;
-  close: Function;
   toggleSourceSearch: Function;
-
-  constructor(props: Props) {
-    super(props);
-
-    this.close = this.close.bind(this);
-  }
-
-  componentWillUnmount() {
-    const shortcuts = this.context.shortcuts;
-    shortcuts.off("Escape", this.onEscape);
-  }
-
-  componentDidMount() {
-    const shortcuts = this.context.shortcuts;
-    shortcuts.on("Escape", this.onEscape);
-  }
-
-  onEscape(shortcut, e) {
-    if (this.isProjectSearchEnabled()) {
-      e.preventDefault();
-      this.close();
-    }
-  }
 
   searchResults(sourceMap: SourcesMap) {
     return sourceMap
@@ -60,11 +35,6 @@ export default class SourceSearch extends Component {
       }));
   }
 
-  close() {
-    this.props.clearQuery();
-    this.props.closeActiveSearch();
-  }
-
   render() {
     const {
       sources,
@@ -75,11 +45,8 @@ export default class SourceSearch extends Component {
     } = this.props;
     return (
       <Autocomplete
-        selectItem={(e, result) => {
-          selectSource(result.id);
-          this.close();
-        }}
-        close={this.close}
+        selectItem={(e, result) => selectSource(result.id)}
+        close={this.props.closeActiveSearch}
         items={this.searchResults(sources)}
         inputValue={query}
         placeholder={L10N.getStr("sourceSearch.search")}

@@ -5,7 +5,7 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { formatKeyShortcut } from "../../utils/text";
 import actions from "../../actions";
-import { getSources, getActiveSearchState } from "../../selectors";
+import { getSources, getActiveSearch } from "../../selectors";
 import { isEnabled } from "devtools-config";
 import "./Sources.css";
 import classnames from "classnames";
@@ -111,6 +111,13 @@ class PrimaryPanes extends Component {
     const { selectedPane } = this.state;
     const { sources, selectSource } = this.props;
 
+    const outlineComp = isEnabled("outline") ? (
+      <Outline
+        selectSource={selectSource}
+        isHidden={selectedPane === "sources"}
+      />
+    ) : null;
+
     return (
       <div className="sources-panel">
         {this.renderHeader()}
@@ -119,10 +126,7 @@ class PrimaryPanes extends Component {
           selectSource={selectSource}
           isHidden={selectedPane === "outline"}
         />
-        <Outline
-          selectSource={selectSource}
-          isHidden={selectedPane === "sources"}
-        />
+        { outlineComp }
         {this.renderFooter()}
       </div>
     );
@@ -134,7 +138,7 @@ PrimaryPanes.displayName = "PrimaryPanes";
 export default connect(
   state => ({
     sources: getSources(state),
-    sourceSearchOn: getActiveSearchState(state) === "source"
+    sourceSearchOn: getActiveSearch(state) === "source"
   }),
   dispatch => bindActionCreators(actions, dispatch)
 )(PrimaryPanes);
